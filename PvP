@@ -1,1 +1,478 @@
+on player join:
+	make console execute command "effect %player% minecraft:night_vision 999999 0 true"
+	make console execute command "gamemode 2 %player%"
+	make console execute command "warp %{map}% %player%"
+	make console execute command "nm clear %player%"
+	clear {classe.%player%}
+	clear {streaks.%player%}
+	clear {big.damage.%player%}
+	clear {big.damage.pseudo.%player%}
+	clear {last.hit.%player%}
+	set {fall.%player%} to "true"
+	set {level.%player%} to player's level
+	if {bestkillstreak.%player%} is not set:
+		set {bestkillstreak.%player%} to 0
+	if {assists.%player%} is not set:
+		set {assists.%player%} to 0
+	if {level.%player%} = 0:
+		make player execute command "resetlevelfirsttime"
+	wait 1 seconds
+	make console execute command "gamemode 2 %player%"
+	set {pvp::kills::%player%} to {kills.%player%}
+	set {pvp::streaks::%player%} to {bestkillstreak.%player%}
+	set {pvp::assists::%player%} to {assists.%player%}
+	set {pvp::levels::%player%} to {level.%player%}
+	broadcast "&eNombres de kills avant le changement de map : &c%{global.kills}%&e/&6100"
+	make console execute command "warp %{map}% %player%"
+	make console execute command "citizens reload"
+	
+on damage:
+	damage cause is fall:
+		if {classe.%victim%} is set:
+			if {fall.%victim%} is "true":
+				set {fall.%victim%} to "false"
+				cancel the event
+		if {classe.%victim%} is not set:
+			cancel the event
+			
 
+			
+		
+on respawn:
+	make console execute command "nm clear %player%"
+	send player title "&cTU ES MORT" for 2 seconds
+	add 1 to {deaths.%player%}
+	set {fall.%player%} to "true"
+	clear {classe.%player%}
+	clear {streaks.%player%}
+	clear {big.damage.%player%}
+	clear {big.damage.pseudo.%player%}
+	clear {last.hit.%player%}
+	wait 2 ticks
+	make console execute command "effect %player% minecraft:night_vision 999999 0 true"
+	make console execute command "gamemode 2 %player%"
+	make console execute command "warp %{map}% %player%"
+	if {global.kills} >= 100:
+		broadcast "&6&l100 KILLS On était fait au total sur cette map !"
+		broadcast "&e&lChangement de maps ..."
+		add 1 to {listemap}
+		if {listemap} = 1:
+			broadcast "&6Nouvelle map: &6&lSPARCIATE"
+			set {map} to "sparciate"
+			set {global.kills} to 0
+			loop all players:
+				make console execute command "warp sparciate %loop-player%"
+				set {fall.%loop-player%} to "true"
+		if {listemap} = 2:
+			broadcast "&6Nouvelle map: &f&lNOTCH"
+			set {map} to "notch"
+			set {global.kills} to 0
+			loop all players:
+				make console execute command "warp notch %loop-player%"
+				set {fall.%loop-player%} to "true"
+		if {listemap} >= 3:
+			broadcast "&6Nouvelle map: &e&lARENE"
+			set {map} to "arene"
+			set {global.kills} to 0
+			set {listemap} to 0
+			loop all players:
+				make console execute command "warp arene %loop-player%"
+				set {fall.%loop-player%} to "true"
+		
+on death of player:
+	make console execute command "nm clear %victim%"
+	add 1 to {streaks.%attacker%}
+	add 1 to {kills.%attacker%.%{classe.%attacker%}%}
+	add 1 to {kills.%attacker%}
+	if attacker is a player:
+		add 1 to {global.kills}
+	set {_name.killeur} to name of attacker
+	set {_name.victim} to name of victim
+	make console execute command "give %attacker% 322 1"
+	if {streaks.%attacker%} = 3:
+		broadcast "&c&lSTREAK : &a%attacker% &7viens de faire 3 kills sans mourir !"
+	if {streaks.%attacker%} = 5:
+		broadcast "&c&lSTREAK : &a%attacker% &7viens de faire 5 kills sans mourir !"
+	if {streaks.%attacker%} = 8:
+		broadcast "&c&lSTREAK : &a%attacker% &7viens de faire %{streaks.%attacker%}% kills sans mourir !"
+	if {streaks.%attacker%} is between 10 and 20:
+		broadcast "&c&lSTREAK : &a%attacker% &7viens de faire %{streaks.%attacker%}% kills sans mourir !"
+	if attacker is a player:
+		if {streaks.%victim%} is between 3 and 4:
+			broadcast "&c&lSTREAK : &a%attacker% &7a mit fin a la serie de &7%{streaks.%victim%}% &7victimes de &a%victim% &7!"
+		if {streaks.%victim%} is between 5 and 8:
+			broadcast "&c&lSTREAK : &a%attacker% &7a mit fin a la serie de &7%{streaks.%victim%}% &7victimes de &a%victim% &7!"
+		if {streaks.%victim%} > 8:
+			broadcast "&c&lSTREAK : &a%attacker% &7a mit fin a la serie de &7%{streaks.%victim%}% &7victimes de &a%victim% &7!"
+	set {level.%attacker%} to attacker's level
+	if attacker's level is between 0 and 16:
+		if {nextlevel.%attacker%} >= {augmentation.%attacker%}:
+			set {augmentation.%attacker%} to 2*{level.%attacker%}+7
+			set {nextlevel.%attacker%} to 2*{level.%attacker%}+7
+			set {nextlevel.%attacker%} to {nextlevel.%attacker%}-1
+			set {nextlevel.%attacker%} to {augmentation.%attacker%}-{nextlevel.%attacker%}
+		else:
+			set {nextlevel.%attacker%} to {nextlevel.%attacker%}+1
+		make console execute command "minecraft:xp 1 %attacker%"
+		loop all players:
+			loop-player is {_name.killeur}
+			message "&a&l+1 &a&lXP &7(&7%{nextlevel.%attacker%}%&7/&7%{augmentation.%attacker%}%&7)" to loop-player
+	if attacker's level is between 17 and 31:
+		if {nextlevel.%attacker%} >= {augmentation.%attacker%}:
+			set {augmentation.%attacker%} to 5*{level.%attacker%}-38
+			set {nextlevel.%attacker%} to 5*{level.%attacker%}-38
+			set {nextlevel.%attacker%} to {nextlevel.%attacker%}-1
+			set {nextlevel.%attacker%} to {augmentation.%attacker%}-{nextlevel.%attacker%}
+		else:
+			set {nextlevel.%attacker%} to {nextlevel.%attacker%}+1
+		make console execute command "minecraft:xp 1 %attacker%"
+		loop all players:
+			loop-player is {_name.killeur}
+			message "&a&l+1 &a&lXP &7(&7%{nextlevel.%attacker%}%&7/&7%{augmentation.%attacker%}%&7)" to loop-player
+	if attacker's level is between 32 and 30000:
+		if {nextlevel.%attacker%} >= {augmentation.%attacker%}:
+			set {augmentation.%attacker%} to 9*{level.%attacker%}-158
+			set {nextlevel.%attacker%} to 9*{level.%attacker%}-158
+			set {nextlevel.%attacker%} to {nextlevel.%attacker%}-1
+			set {nextlevel.%attacker%} to {augmentation.%attacker%}-{nextlevel.%attacker%}
+		else:
+			set {nextlevel.%attacker%} to {nextlevel.%attacker%}+1
+		make console execute command "minecraft:xp 1 %attacker%"
+		loop all players:
+			loop-player is {_name.killeur}
+			message "&a&l+1 &a&lXP &7(&7%{nextlevel.%attacker%}%&7/&7%{augmentation.%attacker%}%&7)" to loop-player
+	set {level.%attacker%} to attacker's level
+	set {level-1.%attacker%} to {level.%attacker%}-1
+	if {nextlevel.%attacker%} = {augmentation.%attacker%}:
+		loop all players:
+			loop-player is {_name.killeur}
+			message "&b&lNIVEAU SUIVANT &6&k||" to loop-player
+			send loop-player title "&bNIVEAU SUIVANT" with subtitle "&7[&6%{level-1.%attacker%}%&7] &7-> &7[&6%{level.%attacker%}%&7]" for 3 seconds
+	if {_name.killeur} is not equal to {big.damage.pseudo.%victim%}:
+		loop all players:
+			loop-player is {big.damage.pseudo.%victim%}
+			message "&6&lASSIST:&7 Assistance sur %victim% &e(+1 Golden Apple)" to loop-player
+			add 1 to {assists.%{big.damage.pseudo.%victim%}%}
+			make console execute command "give %{big.damage.pseudo.%victim%}% 322 1"
+	set {level.%attacker%} to attacker's level
+	if {nextlevel.%attacker%} = {augmentation.%attacker%}:
+		broadcast "&b&lLEVEL: &e%{_name.killeur}% &7est maintenant niveau &6%{level.%attacker%}%"
+	if {streaks.%victim%} > {bestkillstreak.%victim%}:
+		set {bestkillstreak.%victim%} to {streaks.%victim%}
+		loop all players:
+			loop-player is {_name.victim}
+			message "&e&lRECORD: &cVotre nouveau record de killstreaks : &6%{bestkillstreak.%victim%}%" to loop-player
+	wait 2 ticks
+	clear {last.hit.%victim%}
+	clear {classe.%victim%}
+	clear {streaks.%victim%}
+	clear {big.damage.%victim%}
+	clear {big.damage.pseudo.%victim%}
+	wait 2 ticks
+	set {pvp::kills::%victim%} to {kills.%victim%}
+	set {pvp::streaks::%victim%} to {bestkillstreak.%victim%}
+	set {pvp::assists::%victim%} to {assists.%victim%}
+	set {pvp::levels::%victim%} to {level.%victim%}
+	set {pvp::kills::%attacker%} to {kills.%attacker%}
+	set {pvp::streaks::%attacker%} to {bestkillstreak.%attacker%}
+	set {pvp::assists::%attacker%} to {assists.%attacker%}
+	set {pvp::levels::%attacker%} to {level.%attacker%}
+
+on any movement:
+	set {_y.%player%} to round y-coord of player's location
+	if {map} = "notch":
+		if {_y.%player%} < 7:
+			if {fall.%player%} is "false":
+				make console execute command "minecraft:tp %player% ~ ~-100 ~"
+				set {fall.%player%} to "true"
+	if {_y.%player%} < 60:
+		if player's gamemode is adventure:
+			if {classe.%player%} is not set:
+				if {fav.%player%} is not set:
+					make console execute command "warp spawn %player%"
+					make console execute command "cc open pnj %player%"
+					message "&cChoisi une classe avant de sauter !"
+				if {fav.%player%} is set:
+					make console execute command "classe-%{fav.%player%}% %player%"
+					make console execute command "nm prefix %player% %{colorclasse.%player%}%%{displayclasse.%player%}% &e"
+					set {level.%player%} to player's level
+					make console execute command "nm suffix %player% &r &7%{level.%player%}%"
+					send "&7Votre classe favorite s'équipe automatiquement, pour changer ça rendez-vous dans le PNJ ""&6&lFavoris&7"""
+	if {_y.%player%} < 72:
+		if {map} = "arene":
+			if player's gamemode is adventure:
+				if {classe.%player%} is not set:
+					if {fav.%player%} is not set:
+						make console execute command "warp spawn %player%"
+						make console execute command "cc open pnj %player%"
+						message "&cChoisi une classe avant de sauter !"
+					if {fav.%player%} is set:
+						make console execute command "classe-%{fav.%player%}% %player%"
+						make console execute command "nm prefix %player% %{colorclasse.%player%}%%{displayclasse.%player%}% &e"
+						set {level.%player%} to player's level
+						make console execute command "nm suffix %player% &r &7%{level.%player%}%"
+						send "&7Votre classe favorite s'équipe automatiquement, pour changer ça rendez-vous dans le PNJ ""&6&lFavoris&7"""
+	
+		
+on damage:
+	victim is a player
+	attacker is a player
+	if attacker is a player:
+		if attacker is not equal to victim:
+			set {last.hit.%victim%} to name of attacker
+	if {big.damage.%victim%} is not set:
+		set {big.damage.%victim%} to 0
+	set {vie.%victim%} to victim's health
+	wait 1 ticks
+	set {damage.now} to victim's health
+	set {damage.now} to {vie.%victim%}-{damage.now}
+	if {damage.now} > {big.damage.%victim%}:
+		set {big.damage.%victim%} to {damage.now}
+		set {big.damage.pseudo.%victim%} to name of attacker
+
+on death of player:
+	make console execute command "nm clear %victim%"
+	if damage cause is void or burning or potion or drowning or lava:
+		add 1 to {streaks.%{last.hit.%victim%}%}
+		add 1 to {kills.%{last.hit.%victim%}%.%{classe.%attacker%}%}
+		add 1 to {kills.%{last.hit.%victim%}%}
+		add 1 to {global.kills}
+		set {_name.victim} to name of victim
+		make console execute command "give %{last.hit.%victim%}% 322 1"
+		if {streaks.%{last.hit.%victim%}%} = 3:
+			broadcast "&c&lSTREAK : &a%{last.hit.%victim%}% &7viens de faire 3 kills sans mourir !"
+		if {streaks.%{last.hit.%victim%}%} = 5:
+			broadcast "&c&lSTREAK : &a%{last.hit.%victim%}% &7viens de faire 5 kills sans mourir !"
+		if {streaks.%{last.hit.%victim%}%} = 8:
+			broadcast "&c&lSTREAK : &a%{last.hit.%victim%}% &7viens de faire %{streaks.%{last.hit.%victim%}%}% kills sans mourir !"
+		if {streaks.%{last.hit.%victim%}%} is between 10 and 20:
+			broadcast "&c&lSTREAK : &a%{last.hit.%victim%}% &7viens de faire %{streaks.%{last.hit.%victim%}%}% kills sans mourir !"
+		if {last.hit.%victim%} is a player:
+			if {streaks.%victim%} is between 3 and 4:
+				broadcast "&c&lSTREAK : &a%{last.hit.%victim%}% &7a mit fin a la serie de &7%{streaks.%victim%}% &7victimes de &a%victim% &7!"
+			if {streaks.%victim%} is between 5 and 8:
+				broadcast "&c&lSTREAK : &a%{last.hit.%victim%}% &7a mit fin a la serie de &7%{streaks.%victim%}% &7victimes de &a%victim% &7!"
+			if {streaks.%victim%} > 8:
+				broadcast "&c&lSTREAK : &a%{last.hit.%victim%}% &7a mit fin a la serie de &7%{streaks.%victim%}% &7victimes de &a%victim% &7!"
+		set {level.%{last.hit.%victim%}%} to {last.hit.%victim%}'s level
+		if {level.%{last.hit.%victim%}%} is between 0 and 16:
+			if {nextlevel.%{last.hit.%victim%}%} >= {augmentation.%{last.hit.%victim%}%}:
+				set {augmentation.%{last.hit.%victim%}%} to 2*{level.%{last.hit.%victim%}%}+7
+				set {nextlevel.%{last.hit.%victim%}%} to 2*{level.%{last.hit.%victim%}%}+7
+				set {nextlevel.%{last.hit.%victim%}%} to {nextlevel.%{last.hit.%victim%}%}-1
+				set {nextlevel.%{last.hit.%victim%}%} to {augmentation.%{last.hit.%victim%}%}-{nextlevel.%{last.hit.%victim%}%}
+			else:
+				set {nextlevel.%{last.hit.%victim%}%} to {nextlevel.%{last.hit.%victim%}%}+1
+			make console execute command "minecraft:xp 1 %{last.hit.%victim%}%"
+			loop all players:
+				loop-player is {last.hit.%victim%}
+				message "&a&l+1 &a&lXP &7(&7%{nextlevel.%{last.hit.%victim%}%}%&7/&7%{augmentation.%{last.hit.%victim%}%}%&7)" to loop-player
+		if {level.%{last.hit.%victim%}%} is between 17 and 31:
+			if {nextlevel.%{last.hit.%victim%}%} >= {augmentation.%{last.hit.%victim%}%}:
+				set {augmentation.%{last.hit.%victim%}%} to 5*{level.%{last.hit.%victim%}%}-38
+				set {nextlevel.%{last.hit.%victim%}%} to 5*{level.%{last.hit.%victim%}%}-38
+				set {nextlevel.%{last.hit.%victim%}%} to {nextlevel.%{last.hit.%victim%}%}-1
+				set {nextlevel.%{last.hit.%victim%}%} to {augmentation.%{last.hit.%victim%}%}-{nextlevel.%{last.hit.%victim%}%}
+			else:
+				set {nextlevel.%{last.hit.%victim%}%} to {nextlevel.%{last.hit.%victim%}%}+1
+			make console execute command "minecraft:xp 1 %{last.hit.%victim%}%"
+			loop all players:
+				loop-player is {last.hit.%victim%}
+				message "&a&l+1 &a&lXP &7(&7%{nextlevel.%{last.hit.%victim%}%}%&7/&7%{augmentation.%{last.hit.%victim%}%}%&7)" to loop-player
+		if {level.%{last.hit.%victim%}%} is between 32 and 30000:
+			if {nextlevel.%{last.hit.%victim%}%} >= {augmentation.%{last.hit.%victim%}%}:
+				set {augmentation.%{last.hit.%victim%}%} to 9*{level.%{last.hit.%victim%}%}-158
+				set {nextlevel.%{last.hit.%victim%}%} to 9*{level.%{last.hit.%victim%}%}-158
+				set {nextlevel.%{last.hit.%victim%}%} to {nextlevel.%{last.hit.%victim%}%}-1
+				set {nextlevel.%{last.hit.%victim%}%} to {augmentation.%{last.hit.%victim%}%}-{nextlevel.%{last.hit.%victim%}%}
+			else:
+				set {nextlevel.%{last.hit.%victim%}%} to {nextlevel.%{last.hit.%victim%}%}+1
+			make console execute command "minecraft:xp 1 %{last.hit.%victim%}%"
+			loop all players:
+				loop-player is {last.hit.%victim%}
+				message "&a&l+1 &a&lXP &7(&7%{nextlevel.%{last.hit.%victim%}%}%&7/&7%{augmentation.%{last.hit.%victim%}%}%&7)" to loop-player
+		set {level.%{last.hit.%victim%}%} to {last.hit.%victim%}'s level
+		set {level-1.%{last.hit.%victim%}%} to {level.%{last.hit.%victim%}%}-1
+		if {nextlevel.%{last.hit.%victim%}%} = {augmentation.%{last.hit.%victim%}%}:
+			loop all players:
+				loop-player is {last.hit.%victim%}
+				message "&b&lNIVEAU SUIVANT &6&k||" to loop-player
+				send loop-player title "&bNIVEAU SUIVANT" with subtitle "&7[&6%{level-1.%{last.hit.%victim%}%}%&7] &7-> &7[&6%{level.%{last.hit.%victim%}%}%&7]" for 3 seconds
+		if {last.hit.%victim%} is not equal to {big.damage.pseudo.%victim%}:
+			loop all players:
+				loop-player is {big.damage.pseudo.%victim%}
+				message "&6&lASSIST:&7 Assistance sur %victim% &e(+1 Golden Apple)" to loop-player
+				add 1 to {assists.%{big.damage.pseudo.%victim%}%}
+				make console execute command "give %{big.damage.pseudo.%victim%}% 322 1"
+		set {level.%{last.hit.%victim%}%} to {last.hit.%victim%}'s level
+		if {nextlevel.%{last.hit.%victim%}%} = {augmentation.%{last.hit.%victim%}%}:
+			broadcast "&b&lLEVEL: &e%{last.hit.%victim%}% &7est maintenant niveau &6%{level.%{last.hit.%victim%}%}%"
+		if {streaks.%victim%} > {bestkillstreak.%victim%}:
+			set {bestkillstreak.%victim%} to {streaks.%victim%}
+			loop all players:
+				loop-player is {_name.victim}
+				message "&e&lRECORD: &cVotre nouveau record de killstreaks : &6%{bestkillstreak.%victim%}%" to loop-player
+		wait 2 ticks
+		clear {last.hit.%victim%}
+		clear {classe.%victim%}
+		clear {streaks.%victim%}
+		clear {big.damage.%victim%}
+		clear {big.damage.pseudo.%victim%}
+		wait 2 ticks
+		set {pvp::kills::%victim%} to {kills.%victim%}
+		set {pvp::streaks::%victim%} to {bestkillstreak.%victim%}
+		set {pvp::assists::%victim%} to {assists.%victim%}
+		set {pvp::levels::%victim%} to {level.%victim%}
+		set {pvp::kills::%attacker%} to {kills.%attacker%}
+		set {pvp::streaks::%attacker%} to {bestkillstreak.%attacker%}
+		set {pvp::assists::%attacker%} to {assists.%attacker%}
+		set {pvp::levels::%attacker%} to {level.%attacker%}
+
+command /bcclasse:
+	trigger:
+		message "&6&lBEST CLASSE: %{bestclasse.%player%}%"
+
+		loop {pvp::bestclasse::*}:
+			set {_classe} to {pvp::bestclasse::%loop-index%}
+			set {_classeplayer} to loop-index
+			if {_classe} < {pvp::bestclasse::%loop-index%}:
+				set {_classe} to {pvp::bestclasse::%loop-index%}
+				set {_classeplayer} to loop-index
+					
+		send "&e1er. &6%{_killer}% &7: &c%{_kill}%"		
+
+
+command /resetlevel:
+	permission: modo.verif
+	permission message: &cTu n'es pas modo
+	trigger:
+		make console execute command "xp set %player% 0"
+		set {nextlevel.%player%} to 0
+		set {augmentation.%player%} to 0
+		send "&aLevels reset"
+		
+command /resetsteaks:
+	permission: modo.verif
+	permission message: &cTu n'es pas modo
+	trigger:
+		set {bestkillstreak.%player%} to 0
+		send "&aStreaks reset"
+		
+command /pvpstats <offlineplayer>:
+	usage: "&c/pvpstats <pseudo>&r"
+	aliases: /ps, /stats, /pvps
+	trigger:
+		set {_namestats} to "%arg offlineplayer%"
+		set {level.%arg offlineplayer%} to {_namestats}'s level
+		if {level.%arg offlineplayer%} is not set:
+			send "&c%{_namestats}% &cn'est jamais venu sur le serveur PvP"
+		else:
+			send "&aStatistique %arg offlineplayer%"
+			send "&b&lNIVEAU: &e%{level.%arg offlineplayer%}%"
+			send "&c&lKILLS: &e%{kills.%arg offlineplayer%}%"
+			send "&6&lASSISTS: &e%{assists.%arg offlineplayer%}%"
+			send "&a&lBEST KILLSTEAK: &e%{bestkillstreak.%arg offlineplayer%}%"
+			set {ratio.%arg offlineplayer%} to {kills.%arg offlineplayer%}/{deaths.%arg offlineplayer%}
+			send "&7&lRATIO: &e%{ratio.%arg offlineplayer%}%"
+			
+command /topkill:
+	trigger:
+		
+		loop {pvp::kills::*}:
+			set {kill} to {pvp::kills::%loop-index%}
+			set {killer} to loop-index
+			if {kill} < {pvp::kills::%loop-index%}:
+				set {kill} to {pvp::kills::%loop-index%}
+				set {killer} to loop-index
+					
+		send "&e1er. &6%{killer}% &7: &c%{kill}%"
+		
+command /toplevel:
+	trigger:
+		
+		loop {pvp::levels::*}:
+			set {level} to {pvp::levels::%loop-index%}
+			set {levelplayer} to loop-index
+			if {level} < {pvp::levels::%loop-index%}:
+				set {level} to {pvp::levels::%loop-index%}
+				set {levelplayer} to loop-index
+					
+		send "&e1er. &6%{levelplayer}% &7: &c%{level}%"
+		
+command /topstreaks:
+	trigger:
+		
+		loop {pvp::streaks::*}:
+			set {streaks} to {pvp::streaks::%loop-index%}
+			set {streaksplayer} to loop-index
+			if {streaks} < {pvp::streaks::%loop-index%}:
+				set {streaks} to {pvp::streaks::%loop-index%}
+				set {streaksplayer} to loop-index
+					
+		send "&e1er. &6%{streaksplayer}% &7: &c%{streaks}%"
+		
+command /topassists:
+	trigger:
+		
+		loop {pvp::assists::*}:
+			set {assists} to {pvp::assists::%loop-index%}
+			set {assistsplayer} to loop-index
+			if {assists} < {pvp::assists::%loop-index%}:
+				set {assists} to {pvp::assists::%loop-index%}
+				set {assistsplayer} to loop-index
+					
+		send "&e1er. &6%{assistsplayer}% &7: &c%{assists}%"
+		
+command /resetlevelfirsttime:
+	trigger:
+		make console execute command "xp set %player% 0"
+		set {level.%player%} to 0
+		set {nextlevel.%player%} to 0
+		set {augmentation.%player%} to 0
+		
+command /newmap:
+	permission: modo.verif
+	permission message: &cTu n'es pas modo
+	trigger:
+		set {global.kills} to 99
+		
+on rightclick on enchantment_table:
+	cancel event
+	make player execute command "/recompensexp"
+	
+on rightclick on trapped_chest:
+	cancel event
+	make player execute command "/pvpoklm"
+		
+command /recompensexp:
+	trigger:
+		send "&aBientot, vous pourrez améliorer vos kits et vos compétences grace a votre niveau !"
+		
+command /verif <text>:
+	usage: "&c/verif <on/off>&r"
+	permission: modo.verif
+	permission message: &cTu n'es pas modo
+	trigger:
+		if arg 1 is "on":
+			make console execute command "gamemode 3 %player%"
+			send "&aMode vérif activé"
+		else:
+			make console execute command "gamemode 2 %player%"
+			send "&cMode vérif désactivé"
+			
+			
+command /pseudo:
+	trigger:
+		set the player's display name to "T%name of player%"
+		send "T%name of player%"
+		
+	
+command /pseudooff:
+	trigger:
+		Set the player's display name to "&r%name of player%"
+
+
+
+
+#	add {damage.%victim%} to {degat.%victim%.%attacker%::*}
+#	broadcast "%{degat.%victim%.%attacker%::*}%"
